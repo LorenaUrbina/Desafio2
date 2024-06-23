@@ -50,6 +50,7 @@ pipeline {
             steps {
                 script {
                     def functionName = sh(script: "aws cloudformation describe-stack-resources --stack-name $CF_STACK_NAME --query \"StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId\" --output text", returnStdout: true).trim()
+                    echo "Lambda Function Name: ${functionName}"
                     sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id apigateway-access --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
                 }
             }
