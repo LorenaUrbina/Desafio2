@@ -40,14 +40,6 @@ Resources:
           - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
           - MyLambdaFunction: !Ref MyLambdaFunction
 
-  ApiDeployment:
-    Type: 'AWS::ApiGateway::Deployment'
-    Properties:
-      RestApiId: !Ref ApiGateway
-      StageName: 'prod'
-    DependsOn:
-      - ApiMethod
-
 Outputs:
   ApiUrl:
     Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/resource'
