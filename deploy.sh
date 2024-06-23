@@ -3,7 +3,7 @@
 set -e
 
 BUCKET_NAME="lr-bucket-s3"
-REGION="us-west-1"
+REGION="us-west-2"
 
 # Crear el bucket si no existe
 if ! aws s3api head-bucket --bucket "$BUCKET_NAME" 2>/dev/null; then
