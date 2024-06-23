@@ -50,4 +50,4 @@ Resources:
 
 Outputs:
   ApiUrl:
-    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.a
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/resource'
