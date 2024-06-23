@@ -3,7 +3,7 @@
 STACK_NAME=hello-world-stack
 REGION=us-west-2
 TEMPLATE_FILE=template.yaml
-S3_BUCKET=nombre-unico-de-tu-bucket
+S3_BUCKET=Lrbucket
 
 # Crear un bucket de S3 si no existe
 if ! aws s3api head-bucket --bucket "$S3_BUCKET" 2>/dev/null; then
