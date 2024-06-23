@@ -4,8 +4,9 @@ pipeline {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_DEFAULT_REGION = 'us-west-2'
+        PATH = "$PATH:/ruta/a/sam" // Reemplaza /ruta/a/sam con la ruta obtenida del comando which sam
     }
-        stages {
+    stages {
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/LorenaUrbina/Desafio2.git', branch: 'main'
@@ -18,7 +19,7 @@ pipeline {
         }
         stage('Deploy') {
             steps {
-                sh 'sam deploy --stack-name hello-world-lambda --capabilities CAPABILITY_IAM'
+                sh 'sam deploy --stack-name hello-world-lambda --capabilities CAPABILITY_IAM --region ${AWS_DEFAULT_REGION}'
             }
         }
     }
@@ -28,4 +29,3 @@ pipeline {
         }
     }
 }
-
