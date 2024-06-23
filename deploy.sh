@@ -1,25 +1,21 @@
 #!/bin/bash
 
-STACK_NAME=hello-world-stack
-REGION=us-west-2
-S3_BUCKET=lr-bucket-s3
-TEMPLATE_FILE=template.yaml
+# Variables
+STACK_NAME="hello-world-stack"
+REGION="us-west-2"
+S3_BUCKET="nombre-de-tu-bucket-s3"
+TEMPLATE_FILE="template.yaml"  # Asegúrate de que esto coincida con el nombre real del archivo
 
-# Eliminar el stack si está en estado ROLLBACK_COMPLETE
-if aws cloudformation describe-stacks --stack-name $STACK_NAME --region $REGION | grep -q "ROLLBACK_COMPLETE"; then
-    aws cloudformation delete-stack --stack-name $STACK_NAME --region $REGION
-    echo "Waiting for stack deletion to complete..."
-    aws cloudformation wait stack-delete-complete --stack-name $STACK_NAME --region $REGION
-fi
-
-# Crear el bucket de S3 si no existe
-if ! aws s3 ls "s3://$S3_BUCKET" 2>&1 | grep -q 'NoSuchBucket'; then
+# Verificar si el bucket de S3 existe y crearlo si no
+if aws s3 ls "s3://$S3_BUCKET" 2>&1 | grep -q 'NoSuchBucket'; then
+  echo "Creating S3 bucket: $S3_BUCKET"
   aws s3 mb s3://$S3_BUCKET --region $REGION
-  echo "S3 bucket created: $S3_BUCKET"
+else
+  echo "S3 bucket already exists: $S3_BUCKET"
 fi
 
-# Subir el código de Lambda al bucket de S3
+# Subir el archivo zip de Lambda al S3
 aws s3 cp lambda_function.zip s3://$S3_BUCKET/
 
-# Desplegar la plantilla
+# Desplegar la plantilla de CloudFormation
 aws cloudformation deploy --template-file $TEMPLATE_FILE --stack-name $STACK_NAME --capabilities CAPABILITY_IAM --region $REGION
