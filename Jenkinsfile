@@ -13,6 +13,11 @@ pipeline {
                 git url: 'https://github.com/LorenaUrbina/Desafio2.git', branch: 'main'
             }
         }
+        stage('Zip Lambda Function') {
+            steps {
+                sh 'zip lambda_function.zip app.py'
+            }
+        }
         stage('Deploy') {
             steps {
                 sh 'chmod +x deploy.sh'
