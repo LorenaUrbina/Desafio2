@@ -24,10 +24,13 @@ pipeline {
 
         stage('Package Lambda Function') {
             steps {
-                sh '''
-                zip -r9 lambda_function.zip .
-                aws s3 cp lambda_function.zip s3://$S3_BUCKET/
-                '''
+                sh 'zip -r9 lambda_function.zip .'
+            }
+        }
+
+        stage('Upload to S3') {
+            steps {
+                sh 'chmod +x deploy.sh && ./deploy.sh'
             }
         }
 
