@@ -1,4 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
+
 Resources:
   HelloWorldFunction:
     Type: AWS::Lambda::Function
@@ -51,7 +52,7 @@ Resources:
           - Arn
       Principal: apigateway.amazonaws.com
       SourceArn:
-        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*/hello
 
 Outputs:
   HelloWorldApiUrl:
