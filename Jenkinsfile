@@ -12,7 +12,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                git 'https://github.com/tu-usuario/tu-repositorio.git'
+                git branch: 'main', url: 'https://github.com/LorenaUrbina/Desafio2.git'
             }
         }
 
