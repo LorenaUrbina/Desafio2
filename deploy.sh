@@ -6,7 +6,7 @@ REGION="us-west-2"
 S3_BUCKET="lr-bucket-s3"
 TEMPLATE_FILE="template.yaml"
 ZIP_FILE="lambda_function.zip"
-PYTHON_FILE="lambda_function.py"
+PYTHON_FILE="app.py"
 
 # Asegurarse de que AWS CLI está configurado correctamente
 if ! aws sts get-caller-identity; then
