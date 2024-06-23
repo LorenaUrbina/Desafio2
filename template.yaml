@@ -1,61 +1,61 @@
-AWSTemplateFormatVersion: '2010-09-09'
-
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Lambda::Function
+  LambdaExecutionRole:
+    Type: 'AWS::IAM::Role'
     Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: 'Allow'
+            Principal:
+              Service: 'lambda.amazonaws.com'
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: 'LambdaExecutionPolicy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'logs:*'
+                  - 's3:*'
+                Resource: '*'
+
+  MyLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Handler: 'lambda_function.lambda_handler'
+      Role: !GetAtt LambdaExecutionRole.Arn
       Code:
-        S3Bucket: lr-bucket-s3
-        S3Key: lambda_function.zip
-      Handler: app.lambda_handler
-      Role: arn:aws:iam::992382381506:role/LambdaExecutionRole
-      Runtime: python3.8
-      Timeout: 15
-      MemorySize: 128
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: 'lambda_function.zip'
+      Runtime: 'python3.8'
 
-  MyApi:
-    Type: AWS::ApiGateway::RestApi
+  ApiGateway:
+    Type: 'AWS::ApiGateway::RestApi'
     Properties:
-      Name: HelloWorldAPI
+      Name: 'Lambda API'
 
-  MyResource:
-    Type: AWS::ApiGateway::Resource
+  ApiResource:
+    Type: 'AWS::ApiGateway::Resource'
     Properties:
-      ParentId:
-        Fn::GetAtt:
-          - MyApi
-          - RootResourceId
-      PathPart: hello
-      RestApiId:
-        Ref: MyApi
+      ParentId: !GetAtt ApiGateway.RootResourceId
+      PathPart: 'resource'
+      RestApiId: !Ref ApiGateway
 
-  MyMethod:
-    Type: AWS::ApiGateway::Method
+  ApiMethod:
+    Type: 'AWS::ApiGateway::Method'
     Properties:
-      AuthorizationType: NONE
-      HttpMethod: GET
-      ResourceId:
-        Ref: MyResource
-      RestApiId:
-        Ref: MyApi
+      AuthorizationType: 'NONE'
+      HttpMethod: 'GET'
+      ResourceId: !Ref ApiResource
+      RestApiId: !Ref ApiGateway
       Integration:
-        IntegrationHttpMethod: POST
-        Type: AWS_PROXY
-        Uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
-
-  LambdaPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      FunctionName:
-        Ref: HelloWorldFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*
+        IntegrationHttpMethod: 'POST'
+        Type: 'AWS_PROXY'
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaFunction.Arn}/invocations
+          - MyLambdaFunction: !Ref MyLambdaFunction
 
 Outputs:
-  HelloWorldApiUrl:
-    Description: "URL for HelloWorld API"
-    Value:
-      Fn::Sub: https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello
+  ApiUrl:
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/resource'

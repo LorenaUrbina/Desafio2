@@ -1,33 +1,46 @@
 pipeline {
     agent any
+
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_DEFAULT_REGION = 'us-west-2'
+        S3_BUCKET = 'lr-bucket-s3'
+        CF_STACK_NAME = 'lambda-deployment-stack'
     }
+
     stages {
-        stage('Checkout') {
+        stage('Clone Repository') {
             steps {
-                git 'https://github.com/LorenaUrbina/Desafio2.git'
+                git 'https://github.com/tu-usuario/tu-repositorio.git'
             }
         }
-        stage('Deploy') {
+
+        stage('Install Dependencies') {
             steps {
-                sh 'chmod +x deploy.sh'
-                sh './deploy.sh'
+                sh 'pip install -r requirements.txt -t .'
             }
         }
-        stage('Get API URL') {
+
+        stage('Package Lambda Function') {
             steps {
-                script {
-                    API_URL = sh(script: 'aws cloudformation describe-stacks --stack-name hello-world-stack --region us-west-2 --query "Stacks[0].Outputs[?OutputKey==\'HelloWorldApiUrl\'].OutputValue" --output text', returnStdout: true).trim()
-                    echo "API Endpoint is: ${API_URL}"
-                }
+                sh '''
+                zip -r9 lambda_function.zip .
+                aws s3 cp lambda_function.zip s3://$S3_BUCKET/
+                '''
             }
         }
-    }
-    post {
-        always {
-            echo 'Deployment process complete.'
+
+        stage('Deploy with CloudFormation') {
+            steps {
+                sh '''
+                aws cloudformation deploy \
+                    --template-file template.yaml \
+                    --stack-name $CF_STACK_NAME \
+                    --capabilities CAPABILITY_NAMED_IAM \
+                    --parameter-overrides LambdaS3Bucket=$S3_BUCKET
+                '''
+            }
         }
     }
 }
