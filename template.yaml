@@ -56,6 +56,8 @@ Resources:
       FunctionName:
         Ref: HelloWorldFunction
       Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HelloWorldApi}/*/*/hello
 
 Outputs:
   HelloWorldApiUrl:
