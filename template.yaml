@@ -46,8 +46,8 @@ Resources:
       RestApiId: !Ref ApiGateway
       StageName: 'prod'
     DependsOn:
-      - ApiMethod
+      - ApiMethod  # Asegurando que el método esté creado antes del despliegue
 
 Outputs:
   ApiUrl:
-    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/resource'
+    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.a
