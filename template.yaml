@@ -3,47 +3,58 @@ Resources:
   HelloWorldFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda_function.lambda_handler
-      Role: arn:aws:iam::992382381506:role/LambdaExecutionRole
       Code:
-        S3Bucket: nombre-de-tu-bucket-s3
-        S3Key: lambda_function.zip
-      Runtime: python3.8
-      Timeout: 15
-      MemorySize: 128
+        S3Bucket: mi-bucket-lambda
+        S3Key: mi-codigo.zip
+      Handler: index.handler
+      Role: arn:aws:iam::123456789012:role/mi-rol-lambda
+      Runtime: nodejs12.x
 
-  ApiGateway:
+  MyApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
-      Name: HelloWorldApi
+      Name: HelloWorldAPI
 
-  Resource:
+  MyResource:
     Type: AWS::ApiGateway::Resource
     Properties:
-      ParentId: !GetAtt 'ApiGateway.RootResourceId'
-      PathPart: 'hello'
-      RestApiId: !Ref 'ApiGateway'
+      ParentId:
+        Fn::GetAtt:
+          - MyApi
+          - RootResourceId
+      PathPart: hello
+      RestApiId:
+        Ref: MyApi
 
-  Method:
+  MyMethod:
     Type: AWS::ApiGateway::Method
     Properties:
       AuthorizationType: NONE
       HttpMethod: GET
-      ResourceId: !Ref 'Resource'
-      RestApiId: !Ref 'ApiGateway'
+      ResourceId:
+        Ref: MyResource
+      RestApiId:
+        Ref: MyApi
       Integration:
         IntegrationHttpMethod: POST
         Type: AWS_PROXY
-        Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations'
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
 
   LambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      Action: 'lambda:InvokeFunction'
-      FunctionName: !GetAtt 'HelloWorldFunction.Arn'
-      Principal: 'apigateway.amazonaws.com'
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - HelloWorldFunction
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${MyApi}/*/*
 
 Outputs:
-  EndpointUrl:
-    Description: "API Gateway endpoint URL"
-    Value: !Sub 'https://${ApiGateway}.execute-api.${AWS::Region}.amazonaws.com/prod/hello'
+  HelloWorldApiUrl:
+    Description: "URL for HelloWorld API"
+    Value:
+      Fn::Sub: https://${MyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello
