@@ -26,4 +26,5 @@ echo "Deploying CloudFormation stack: $STACK_NAME"
 aws cloudformation deploy --template-file $TEMPLATE_FILE --stack-name $STACK_NAME --capabilities CAPABILITY_IAM --region $REGION
 
 # Obtener la URL del API Gateway
-API_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $
+API_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $REGION --query "Stacks[0].Outputs[?OutputKey=='HelloWorldApiUrl'].OutputValue" --output text)
+echo "API Endpoint is: $API_URL"
