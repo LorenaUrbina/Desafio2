@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_DEFAULT_REGION = 'us-west-1'
+        AWS_DEFAULT_REGION = 'us-west-2'
         S3_BUCKET = 'lr-bucket-s3'
         CF_STACK_NAME = 'lambda-deployment-stack'
     }
@@ -30,19 +30,44 @@ pipeline {
 
         stage('Upload to S3') {
             steps {
-                sh 'chmod +x deploy.sh && ./deploy.sh'
+                script {
+                    def bucketExists = sh(script: "aws s3api head-bucket --bucket $S3_BUCKET", returnStatus: true) == 0
+                    if (!bucketExists) {
+                        echo 'Bucket does not exist. Creating...'
+                        sh "aws s3api create-bucket --bucket $S3_BUCKET --region $AWS_DEFAULT_REGION --create-bucket-configuration LocationConstraint=$AWS_DEFAULT_REGION"
+                    } else {
+                        echo 'Bucket exists.'
+                    }
+                    sh "aws s3 cp lambda_function.zip s3://$S3_BUCKET/"
+                }
             }
         }
 
         stage('Deploy with CloudFormation') {
             steps {
-                sh '''
-                aws cloudformation deploy \
-                    --template-file template.yaml \
-                    --stack-name $CF_STACK_NAME \
-                    --capabilities CAPABILITY_NAMED_IAM \
-                    --parameter-overrides LambdaS3Bucket=$S3_BUCKET
-                '''
+                script {
+                    def stackExists = sh(script: "aws cloudformation describe-stacks --stack-name $CF_STACK_NAME", returnStatus: true) == 0
+                    if (stackExists) {
+                        echo 'Stack exists, updating...'
+                        sh '''
+                        aws cloudformation update-stack \
+                            --stack-name $CF_STACK_NAME \
+                            --template-body file://template.yaml \
+                            --capabilities CAPABILITY_NAMED_IAM \
+                            --parameters ParameterKey=LambdaS3Bucket,ParameterValue=$S3_BUCKET
+                        '''
+                    } else {
+                        echo 'Stack does not exist, creating...'
+                        sh '''
+                        aws cloudformation create-stack \
+                            --stack-name $CF_STACK_NAME \
+                            --template-body file://template.yaml \
+                            --capabilities CAPABILITY_NAMED_IAM \
+                            --parameters ParameterKey=LambdaS3Bucket,ParameterValue=$S3_BUCKET
+                        '''
+                    }
+                    sh 'aws cloudformation wait stack-create-complete --stack-name $CF_STACK_NAME'
+                }
             }
         }
 
@@ -52,16 +77,9 @@ pipeline {
                     def functionName = sh(script: "aws cloudformation describe-stack-resources --stack-name $CF_STACK_NAME --query \"StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId\" --output text", returnStdout: true).trim()
                     echo "Lambda Function Name: ${functionName}"
                     
-                    // Generate a unique statement ID based on the current timestamp
                     def statementId = "apigateway-access-${System.currentTimeMillis()}"
 
-                    try {
-                        sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
-                    } catch (Exception e) {
-                        echo "Permission already exists, trying to remove it first..."
-                        sh "aws lambda remove-permission --function-name ${functionName} --statement-id apigateway-access --region $AWS_DEFAULT_REGION"
-                        sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
-                    }
+                    sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
                 }
             }
         }
