@@ -4,25 +4,17 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: lambda_function.lambda_handler
-      Role: arn:aws:iam::992382381506:role/LambdaExecutionRole
+      Role: arn:aws:iam::YOUR_ACCOUNT_ID:role/LambdaExecutionRole
       Code:
-        ZipFile: |
-          import json
-
-          def lambda_handler(event, context):
-              return {
-                  'statusCode': 200,
-                  'body': json.dumps('Hello World')
-              }
+        S3Bucket: your-unique-s3-bucket-name
+        S3Key: lambda_function.zip
       Runtime: python3.8
       Timeout: 15
       MemorySize: 128
-
   HelloWorldApi:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: HelloWorldApi
-
   HelloWorldApiResource:
     Type: AWS::ApiGateway::Resource
     Properties:
@@ -33,7 +25,6 @@ Resources:
       PathPart: hello
       RestApiId:
         Ref: HelloWorldApi
-
   HelloWorldApiMethod:
     Type: AWS::ApiGateway::Method
     Properties:
@@ -48,7 +39,6 @@ Resources:
         Type: AWS_PROXY
         Uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
-
   LambdaPermission:
     Type: AWS::Lambda::Permission
     Properties:
@@ -56,9 +46,6 @@ Resources:
       FunctionName:
         Ref: HelloWorldFunction
       Principal: apigateway.amazonaws.com
-      SourceArn:
-        Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HelloWorldApi}/*/*/hello
-
 Outputs:
   HelloWorldApiUrl:
     Value:
