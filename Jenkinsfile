@@ -19,6 +19,14 @@ pipeline {
                 sh './deploy.sh'
             }
         }
+        stage('Get API URL') {
+            steps {
+                script {
+                    def apiUrl = sh(script: "aws cloudformation describe-stacks --stack-name hello-world-stack --query 'Stacks[0].Outputs[?OutputKey==`HelloWorldApiUrl`].OutputValue' --output text", returnStdout: true).trim()
+                    echo "API Endpoint is: ${apiUrl}"
+                }
+            }
+        }
     }
     post {
         always {
