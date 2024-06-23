@@ -24,6 +24,7 @@ pipeline {
                 script {
                     def apiUrl = sh(script: "aws cloudformation describe-stacks --stack-name hello-world-stack --query 'Stacks[0].Outputs[?OutputKey==`HelloWorldApiUrl`].OutputValue' --output text", returnStdout: true).trim()
                     echo "API Endpoint is: ${apiUrl}"
+                    sh "curl -X GET ${apiUrl}" // Esto imprimirá la respuesta de la API
                 }
             }
         }
