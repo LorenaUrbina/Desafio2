@@ -1,22 +1,53 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Transform: AWS::Serverless-2016-10-31
 Resources:
   HelloWorldFunction:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       Handler: app.lambda_handler
       Role: arn:aws:iam::992382381506:role/LambdaExecutionRole
-      CodeUri: s3://lr-bucket-s3/lambda_function.zip
+      Code:
+        S3Bucket: lr-bucket-s3
+        S3Key: lambda_function.zip
       Runtime: python3.8
       Timeout: 15
       MemorySize: 128
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
+  HelloWorldApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: HelloWorldApi
+  HelloWorldApiResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - HelloWorldApi
+          - RootResourceId
+      PathPart: hello
+      RestApiId:
+        Ref: HelloWorldApi
+  HelloWorldApiMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId:
+        Ref: HelloWorldApiResource
+      RestApiId:
+        Ref: HelloWorldApi
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HelloWorldFunction.Arn}/invocations
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: HelloWorldFunction
+      Principal: apigateway.amazonaws.com
 Outputs:
   HelloWorldApiUrl:
-    Value: !Sub 'https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello'
+    Value:
+      Fn::Sub: https://${HelloWorldApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
