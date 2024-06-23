@@ -14,6 +14,5 @@ fi
 # Subir el archivo zip a S3
 aws s3 cp lambda_function.zip s3://$S3_BUCKET/
 
-# Empaquetar y desplegar la plantilla
-aws cloudformation package --template-file $TEMPLATE_FILE --s3-bucket $S3_BUCKET --output-template-file packaged.yaml
-aws cloudformation deploy --template-file packaged.yaml --stack-name $STACK_NAME --capabilities CAPABILITY_IAM --region $REGION
+# Desplegar la plantilla
+aws cloudformation deploy --template-file $TEMPLATE_FILE --stack-name $STACK_NAME --capabilities CAPABILITY_IAM --region $REGION
