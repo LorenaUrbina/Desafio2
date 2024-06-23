@@ -52,16 +52,9 @@ pipeline {
                     def functionName = sh(script: "aws cloudformation describe-stack-resources --stack-name $CF_STACK_NAME --query \"StackResources[?ResourceType=='AWS::Lambda::Function'].PhysicalResourceId\" --output text", returnStdout: true).trim()
                     echo "Lambda Function Name: ${functionName}"
                     
-                    // Generate a unique statement ID based on the current timestamp
                     def statementId = "apigateway-access-${System.currentTimeMillis()}"
 
-                    try {
-                        sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
-                    } catch (Exception e) {
-                        echo "Permission already exists, trying to remove it first..."
-                        sh "aws lambda remove-permission --function-name ${functionName} --statement-id apigateway-access --region $AWS_DEFAULT_REGION"
-                        sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
-                    }
+                    sh "aws lambda add-permission --function-name ${functionName} --principal apigateway.amazonaws.com --statement-id ${statementId} --action lambda:InvokeFunction --region $AWS_DEFAULT_REGION"
                 }
             }
         }
