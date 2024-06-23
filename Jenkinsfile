@@ -14,12 +14,12 @@ pipeline {
         }
         stage('Build') {
             steps {
-                sh 'source /home/lorena/sam-env/bin/activate && sam build'
+                sh '. /home/lorena/sam-env/bin/activate && sam build'
             }
         }
         stage('Deploy') {
             steps {
-                sh 'source /home/lorena/sam-env/bin/activate && sam deploy --stack-name hello-world-lambda --capabilities CAPABILITY_IAM --region ${AWS_DEFAULT_REGION}'
+                sh '. /home/lorena/sam-env/bin/activate && sam deploy --stack-name hello-world-lambda --capabilities CAPABILITY_IAM --region ${AWS_DEFAULT_REGION}'
             }
         }
     }
