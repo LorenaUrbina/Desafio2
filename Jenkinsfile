@@ -4,7 +4,7 @@ pipeline {
     environment {
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_DEFAULT_REGION = 'us-west-2'
+        AWS_DEFAULT_REGION = 'us-west-1'
         S3_BUCKET = 'lr-bucket-s3'
         CF_STACK_NAME = 'lambda-deployment-stack'
     }
@@ -48,14 +48,29 @@ pipeline {
                 script {
                     def stackExists = sh(script: "aws cloudformation describe-stacks --stack-name $CF_STACK_NAME", returnStatus: true) == 0
                     if (stackExists) {
-                        echo 'Stack exists, updating...'
-                        sh '''
-                        aws cloudformation update-stack \
-                            --stack-name $CF_STACK_NAME \
-                            --template-body file://template.yaml \
-                            --capabilities CAPABILITY_NAMED_IAM \
-                            --parameters ParameterKey=LambdaS3Bucket,ParameterValue=$S3_BUCKET
-                        '''
+                        def stackStatus = sh(script: "aws cloudformation describe-stacks --stack-name $CF_STACK_NAME --query 'Stacks[0].StackStatus' --output text", returnStdout: true).trim()
+                        if (stackStatus == "ROLLBACK_COMPLETE") {
+                            echo 'Stack is in ROLLBACK_COMPLETE state, deleting...'
+                            sh "aws cloudformation delete-stack --stack-name $CF_STACK_NAME"
+                            sh "aws cloudformation wait stack-delete-complete --stack-name $CF_STACK_NAME"
+                            echo 'Stack deleted, creating...'
+                            sh '''
+                            aws cloudformation create-stack \
+                                --stack-name $CF_STACK_NAME \
+                                --template-body file://template.yaml \
+                                --capabilities CAPABILITY_NAMED_IAM \
+                                --parameters ParameterKey=LambdaS3Bucket,ParameterValue=$S3_BUCKET
+                            '''
+                        } else {
+                            echo 'Stack exists, updating...'
+                            sh '''
+                            aws cloudformation update-stack \
+                                --stack-name $CF_STACK_NAME \
+                                --template-body file://template.yaml \
+                                --capabilities CAPABILITY_NAMED_IAM \
+                                --parameters ParameterKey=LambdaS3Bucket,ParameterValue=$S3_BUCKET
+                            '''
+                        }
                     } else {
                         echo 'Stack does not exist, creating...'
                         sh '''
