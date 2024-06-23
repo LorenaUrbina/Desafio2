@@ -8,6 +8,12 @@ TEMPLATE_FILE="template.yaml"
 ZIP_FILE="lambda_function.zip"
 PYTHON_FILE="lambda_function.py"
 
+# Asegurarse de que AWS CLI está configurado correctamente
+if ! aws sts get-caller-identity; then
+  echo "AWS CLI is not configured properly."
+  exit 1
+fi
+
 # Crear el archivo ZIP si no existe
 echo "Creating ZIP file from Python lambda function..."
 if [ ! -f $ZIP_FILE ]; then
@@ -33,5 +39,9 @@ aws s3 cp $ZIP_FILE s3://$S3_BUCKET/
 # Desplegar la plantilla de CloudFormation
 echo "Deploying CloudFormation template..."
 aws cloudformation deploy --template-file $TEMPLATE_FILE --stack-name $STACK_NAME --capabilities CAPABILITY_IAM --region $REGION
+
+# Capturar y mostrar el URL del API después del despliegue
+API_URL=$(aws cloudformation describe-stacks --stack-name $STACK_NAME --region $REGION --query "Stacks[0].Outputs[?OutputKey=='HelloWorldApiUrl'].OutputValue" --output text)
+echo "API Endpoint is: ${API_URL}"
 
 echo "Deployment complete."
